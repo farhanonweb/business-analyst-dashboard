@@ -79,7 +79,7 @@ const Performance = () => {
         <DataGrid
           loading={isLoading || !data}
           getRowId={(row) => row._id}
-          rows={(data && data.sales) || []}
+          rows={data?.sales || []}
           columns={columns}
           components={{
             ColumnMenu: CustomColumnMenu,
