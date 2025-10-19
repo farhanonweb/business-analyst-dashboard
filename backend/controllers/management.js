@@ -19,28 +19,44 @@ export const getUserPerformance = async (req, res) => {
       { $match: { _id: new mongoose.Types.ObjectId(id) } },
       {
         $lookup: {
-          from: "affiliatestats",
+          from: "affiliatestats", 
           localField: "_id",
           foreignField: "userId",
           as: "affiliateStats",
         },
       },
-      { $unwind: "$affiliateStats" },
+     
+      {
+        $unwind: { path: "$affiliateStats", preserveNullAndEmptyArrays: true },
+      },
     ]);
-   
-    const saleTransactions = await Promise.all(
-      userWithStats[0].affiliateStats.affiliateSales.map((id) => {
-        return Transaction.findById(id);
-      })
-    );
-    const filteredSaleTransactions = saleTransactions.filter(
-      (transaction) => transaction !== null
-    );
+
+    
+    if (!userWithStats || userWithStats.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const user = userWithStats[0]; 
+    let filteredSaleTransactions = []; 
+    
+    if (user.affiliateStats && user.affiliateStats.affiliateSales) {
+      const saleTransactions = await Promise.all(
+        user.affiliateStats.affiliateSales.map((id) => {
+          return Transaction.findById(id);
+        })
+      );
+      filteredSaleTransactions = saleTransactions.filter(
+        (transaction) => transaction !== null
+      );
+    }
 
     res
       .status(200)
-      .json({ user: userWithStats[0], sales: filteredSaleTransactions });
+      .json({ user: user, sales: filteredSaleTransactions });
+      
   } catch (error) {
-    res.status(404).json({ message: error.message });
+   
+    console.error("PERFORMANCE CONTROLLER ERROR:", error); 
+    res.status(500).json({ message: error.message });
   }
 };
